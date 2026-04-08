@@ -373,22 +373,32 @@ async function renderDetail() {
   document.getElementById('detail-weight').textContent = machine.weightLbs;
   document.getElementById('detail-last-used').textContent = machine.lastUsed || '—';
 
-  updateCompleteButton();
+  await updateCompleteButton();
 }
 
 /**
- * Update #btn-complete label and behaviour based on circuit context.
- * Non-circuit mode implemented in Step 4. Circuit-aware routing stubbed for Step 9.
+ * Update #btn-complete label based on circuit context.
+ * Made async in Step 9 to look up next machine name.
  */
-function updateCompleteButton() {
-  // Circuit-aware labels (Step 9) — for now always non-circuit mode
-  document.getElementById('btn-complete').textContent = 'Complete & Return to Gallery';
+async function updateCompleteButton() {
+  const btn = document.getElementById('btn-complete');
+  if (!circuitState) {
+    btn.textContent = 'Complete & Return to Gallery';
+    return;
+  }
+  const { machineIds, currentIndex } = circuitState;
+  if (currentIndex < machineIds.length - 1) {
+    const nextMachine = await getRecord('machines', machineIds[currentIndex + 1]);
+    btn.textContent = `Complete & Next: ${nextMachine ? nextMachine.name : '…'}`;
+  } else {
+    btn.textContent = 'Complete & Finish Circuit';
+  }
 }
 
 /**
  * Called when the Complete button is tapped.
  * Logs the workout, updates lastUsed, then navigates appropriately.
- * Non-circuit routing implemented in Step 4. Circuit routing stubbed for Step 9.
+ * Circuit-aware routing implemented in Step 9.
  */
 async function handleComplete() {
   const machine = await getRecord('machines', currentMachineId);
@@ -397,8 +407,19 @@ async function handleComplete() {
   await logWorkout(machine.id, machine.weightLbs);
   showToast('Workout logged');
 
-  // Circuit-aware routing (Step 9) — for now always return to gallery
-  goToMainMenu();
+  if (!circuitState) {
+    goToMainMenu();
+    return;
+  }
+
+  const { machineIds, currentIndex } = circuitState;
+  if (currentIndex < machineIds.length - 1) {
+    circuitState.currentIndex = currentIndex + 1;
+    goToDetail(machineIds[circuitState.currentIndex]);
+  } else {
+    circuitState = null;
+    goToMainMenu();
+  }
 }
 
 /**
@@ -788,13 +809,30 @@ function attachReorderDragHandlers() {
  * Implemented in Step 9.
  */
 async function loadCircuitSelect() {
-  // TODO (Step 9): getAllFromStore('circuits'), render list items,
-  // wire up tap → startCircuit(circuit.id)
-  console.log('loadCircuitSelect: stub');
+  const circuits = await getAllFromStore('circuits');
   const list = document.getElementById('circuit-select-list');
   const empty = document.getElementById('circuit-select-empty');
+
   list.innerHTML = '';
-  empty.classList.remove('hidden');
+  empty.classList.toggle('hidden', circuits.length > 0);
+
+  circuits.forEach((circuit) => {
+    const li = document.createElement('li');
+    li.className = 'list-item';
+    li.addEventListener('click', () => startCircuit(circuit.id));
+
+    const name = document.createElement('span');
+    name.className = 'list-item-name';
+    name.textContent = circuit.name;
+
+    const chevron = document.createElement('span');
+    chevron.className = 'list-item-chevron';
+    chevron.textContent = '›';
+
+    li.appendChild(name);
+    li.appendChild(chevron);
+    list.appendChild(li);
+  });
 }
 
 /**
@@ -803,9 +841,13 @@ async function loadCircuitSelect() {
  * Implemented in Step 9.
  */
 async function startCircuit(circuitId) {
-  // TODO (Step 9): find circuit, set circuitState = { circuitId, machineIds, currentIndex: 0 },
-  // goToDetail(machineIds[0])
-  console.log('startCircuit: stub', circuitId);
+  const circuit = await getRecord('circuits', circuitId);
+  if (!circuit) {
+    showToast('Circuit not found');
+    return;
+  }
+  circuitState = { circuitId, machineIds: circuit.machineIds, currentIndex: 0 };
+  goToDetail(circuit.machineIds[0]);
 }
 
 // ── Circuit Editor ────────────────────────────────────────────────────────────

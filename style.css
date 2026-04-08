@@ -551,6 +551,11 @@ input, label {
   cursor: grabbing;
 }
 
+.mgmt-item.dragging {
+  opacity: 0.5;
+  outline: 2px solid var(--color-accent);
+}
+
 /* ── Reorder Banner & Actions ──────────────────────────────────────────────── */
 .reorder-banner {
   background: var(--color-accent);

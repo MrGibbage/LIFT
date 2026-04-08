@@ -241,12 +241,12 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - `deleteCircuit(circuitId)`: `deleteRecord`, "Circuit deleted" toast, `loadManagement()`
   - `loadManagement()` extended: fetches circuits, renders `#circuit-mgmt-list` with Edit (→ `goToCircuitEditor`) and Delete (→ `showConfirm` → `deleteCircuit`) buttons; toggles `#circuit-mgmt-empty`
 
-- [ ] **Step 9: Circuit flow (runtime)**
-  - "Start Circuit" button on Main Menu → Circuit Selection screen
-  - Selecting a circuit sets circuit state (circuitId, machineIds array, currentIndex = 0)
-  - Machine Detail shows correct context-aware Complete buttons
-  - Circuit advances through machines in order
-  - Last machine → "Complete & Finish Circuit" clears circuit state
+- [x] **Step 9: Circuit flow (runtime)**
+  - `loadCircuitSelect()`: fetches all circuits, toggles empty state, renders tappable `.list-item` rows with chevron; tap → `startCircuit(circuit.id)`
+  - `startCircuit(circuitId)`: fetches circuit, shows toast if not found, sets `circuitState = { circuitId, machineIds, currentIndex: 0 }`, calls `goToDetail(machineIds[0])`
+  - `updateCompleteButton()` made async: null state → "Complete & Return to Gallery"; mid-circuit → "Complete & Next: {name}" (looks up next machine); last machine → "Complete & Finish Circuit"
+  - `renderDetail()` now awaits `updateCompleteButton()`
+  - `handleComplete()` made circuit-aware: logs workout + toast as before; null state → `goToMainMenu()`; mid-circuit → increments `currentIndex`, `goToDetail(next)`; last machine → clears `circuitState`, `goToMainMenu()`
 
 ### Phase 5 — Data Portability
 
