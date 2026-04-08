@@ -220,10 +220,11 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
 
 ### Phase 3 — Management
 
-- [ ] **Step 6: Machine management (add/edit/delete)**
-  - Add Machine form (name + image upload)
-  - Display machine list with edit (name) and delete (with confirmation)
-  - Delete also removes all workout records for that machine
+- [x] **Step 6: Machine management (add/edit/delete)**
+  - `loadManagement()` fetches and sorts machines, renders `.mgmt-item` list items (thumbnail, name, Edit/Delete buttons), toggles `#machine-mgmt-empty`
+  - Add Machine: reads `#new-machine-name` (required) and `#new-machine-image` (optional file), generates `id = slugify(name) + '-' + Date.now()`, sets `sortOrder` to `max + 1`, writes via `putRecord`, clears form, refreshes list, shows "Machine added" toast
+  - Edit name: `startInlineEdit()` helper swaps the name `<span>` for a styled `<input>` and changes Edit button to Save; Enter key also triggers save; Escape cancels (re-renders list); `updateMachineName()` validates non-empty, updates record, shows "Name updated" toast
+  - Delete: Delete button calls `showConfirm()` with warning about workout history; on confirm, `deleteMachine()` opens a cursor on the `machineId` index of the workouts store to delete all matching workout records, then `deleteRecord('machines', id)`; shows "Machine deleted" toast
 
 - [ ] **Step 7: Machine reorder mode**
   - "Reorder Machines" button enters reorder mode

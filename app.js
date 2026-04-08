@@ -457,8 +457,101 @@ async function handleSaveWeight() {
  * Implemented in Step 6.
  */
 async function loadManagement() {
-  // TODO (Step 6): load machines + circuits, render machine list and circuit list
-  console.log('loadManagement: stub');
+  const machines = await getAllFromStore('machines');
+  machines.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const list = document.getElementById('machine-mgmt-list');
+  const empty = document.getElementById('machine-mgmt-empty');
+  list.innerHTML = '';
+  empty.classList.toggle('hidden', machines.length > 0);
+
+  machines.forEach((machine) => {
+    const li = document.createElement('li');
+    li.className = 'mgmt-item';
+    li.dataset.machineId = machine.id;
+
+    const img = document.createElement('img');
+    img.className = 'mgmt-item-thumb';
+    img.alt = machine.name;
+    img.src = machine.imageBlob
+      ? URL.createObjectURL(machine.imageBlob)
+      : 'icons/default-machine.svg';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'mgmt-item-name';
+    nameSpan.textContent = machine.name;
+
+    const actions = document.createElement('div');
+    actions.className = 'mgmt-item-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-secondary btn-sm';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => startInlineEdit(li, machine.id, nameSpan, editBtn));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-danger btn-sm';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => {
+      showConfirm(
+        `Delete "${machine.name}"? This will also erase all workout history for this machine.`,
+        async () => {
+          await deleteMachine(machine.id);
+          showToast('Machine deleted');
+          loadManagement();
+        }
+      );
+    });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
+    li.appendChild(img);
+    li.appendChild(nameSpan);
+    li.appendChild(actions);
+    list.appendChild(li);
+  });
+}
+
+/**
+ * Begin inline name editing on a management list item.
+ * Replaces the name span with an input; swaps Edit → Save button.
+ * @param {HTMLElement} li
+ * @param {string} machineId
+ * @param {HTMLElement} nameSpan
+ * @param {HTMLButtonElement} editBtn
+ */
+function startInlineEdit(li, machineId, nameSpan, editBtn) {
+  if (li.dataset.editing) return;
+  li.dataset.editing = 'true';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'mgmt-item-name-input';
+  input.value = nameSpan.textContent;
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const saveBtn = editBtn.cloneNode(false);
+  saveBtn.textContent = 'Save';
+  editBtn.replaceWith(saveBtn);
+
+  const doSave = async () => {
+    const newName = input.value.trim();
+    if (!newName) {
+      showToast('Name cannot be empty');
+      input.focus();
+      return;
+    }
+    await updateMachineName(machineId, newName);
+  };
+
+  saveBtn.addEventListener('click', doSave);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSave();
+    if (e.key === 'Escape') loadManagement();
+  });
 }
 
 /**
@@ -466,31 +559,79 @@ async function loadManagement() {
  * Implemented in Step 6.
  */
 async function handleAddMachine() {
-  // TODO (Step 6): read #new-machine-name and #new-machine-image,
-  // generate id (slugify + timestamp), putRecord('machines', {...}),
-  // refresh management screen, showToast('Machine added')
-  console.log('handleAddMachine: stub');
+  const nameInput = document.getElementById('new-machine-name');
+  const imageInput = document.getElementById('new-machine-image');
+
+  const name = nameInput.value.trim();
+  if (!name) {
+    showToast('Enter a machine name');
+    nameInput.focus();
+    return;
+  }
+
+  const machines = await getAllFromStore('machines');
+  const maxSortOrder = machines.length > 0
+    ? Math.max(...machines.map((m) => m.sortOrder))
+    : -1;
+
+  const id = slugify(name) + '-' + Date.now();
+  const imageFile = imageInput.files[0] ?? null;
+
+  await putRecord('machines', {
+    id,
+    name,
+    weightLbs: 0,
+    lastUsed: todayISO(),
+    imageBlob: imageFile,
+    sortOrder: maxSortOrder + 1,
+  });
+
+  nameInput.value = '';
+  imageInput.value = '';
+  document.getElementById('new-machine-image-name').textContent = 'No file chosen';
+
+  showToast('Machine added');
+  loadManagement();
 }
 
 /**
- * Update a machine's name in DB.
+ * Update a machine's name in DB and refresh the list.
  * @param {string} machineId
  * @param {string} newName
  * Implemented in Step 6.
  */
 async function updateMachineName(machineId, newName) {
-  // TODO (Step 6)
-  console.log('updateMachineName: stub', machineId, newName);
+  const machine = await getRecord('machines', machineId);
+  if (!machine) return;
+  await putRecord('machines', { ...machine, name: newName });
+  showToast('Name updated');
+  loadManagement();
 }
 
 /**
  * Delete a machine and all its associated workouts from DB.
+ * Uses the machineId index on the workouts store to find and remove all related records.
  * @param {string} machineId
  * Implemented in Step 6.
  */
 async function deleteMachine(machineId) {
-  // TODO (Step 6): deleteRecord('machines', id), delete all workouts with machineId index
-  console.log('deleteMachine: stub', machineId);
+  // Delete all workouts for this machine via the machineId index cursor
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('workouts', 'readwrite');
+    const index = tx.objectStore('workouts').index('machineId');
+    const req = index.openCursor(IDBKeyRange.only(machineId));
+    req.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        cursor.delete();
+        cursor.continue();
+      }
+    };
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+
+  await deleteRecord('machines', machineId);
 }
 
 // ── Reorder Mode ──────────────────────────────────────────────────────────────
