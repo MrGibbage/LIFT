@@ -226,19 +226,20 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - Edit name: `startInlineEdit()` helper swaps the name `<span>` for a styled `<input>` and changes Edit button to Save; Enter key also triggers save; Escape cancels (re-renders list); `updateMachineName()` validates non-empty, updates record, shows "Name updated" toast
   - Delete: Delete button calls `showConfirm()` with warning about workout history; on confirm, `deleteMachine()` opens a cursor on the `machineId` index of the workouts store to delete all matching workout records, then `deleteRecord('machines', id)`; shows "Machine deleted" toast
 
-- [ ] **Step 7: Machine reorder mode**
-  - "Reorder Machines" button enters reorder mode
-  - Drag-and-drop list (HTML5 drag API or touch-friendly library — keep it vanilla JS)
-  - Mode banner displayed
-  - Done / Cancel buttons
-  - On Done: update `sortOrder` for all machines in DB
+- [x] **Step 7: Machine reorder mode**
+  - `enterReorderMode()`: sets `isReorderMode = true`, shows `#reorder-banner` and `#reorder-actions`, hides `#btn-reorder` / `#section-add-machine` / `#section-circuits` / `#section-data`, prepends `⠿` drag handle to each `<li>` and hides its Edit/Delete actions, calls `attachReorderDragHandlers()`
+  - `exitReorderMode(save)`: if save, reads DOM order of `#machine-mgmt-list`, writes updated `sortOrder` (= DOM index) for each machine via `Promise.all`, shows "Order saved" toast; always calls `goToManagement()` to re-render cleanly
+  - `attachReorderDragHandlers()`: touch-event drag-and-drop (touchstart/touchmove/touchend on each `.drag-handle`); on touchmove iterates sibling `<li>` bounding rects to find target, uses `insertBefore` to reorder DOM live; `.dragging` CSS class (0.5 opacity + teal outline) applied during drag; no HTML5 drag API used (unreliable on Android touch)
 
 ### Phase 4 — Circuits
 
-- [ ] **Step 8: Circuit editor**
-  - Add/edit circuit: name input + machine selector + drag-to-order
-  - Save to `circuits` store
-  - Delete circuit (with confirmation)
+- [x] **Step 8: Circuit editor**
+  - `loadCircuitEditor()`: sets title, fetches machines, pre-fills form when editing, renders selected/available lists
+  - `buildCircuitSelectedItem()` / `buildCircuitAvailableItem()`: DOM builders; + moves machine to selected, × moves it back to available
+  - `attachCircuitDragHandlers()`: touch drag-and-drop on `#circuit-selected-list`, same pattern as Step 7; uses module-level `_circuitDraggingEl` to avoid closure issues; `data-drag-attached` flag prevents duplicate listeners when new items are added
+  - `handleSaveCircuit()`: validates name + ≥1 machine; generates id for new; `putRecord('circuits', ...)`, "Circuit saved" toast, `goToManagement()`
+  - `deleteCircuit(circuitId)`: `deleteRecord`, "Circuit deleted" toast, `loadManagement()`
+  - `loadManagement()` extended: fetches circuits, renders `#circuit-mgmt-list` with Edit (→ `goToCircuitEditor`) and Delete (→ `showConfirm` → `deleteCircuit`) buttons; toggles `#circuit-mgmt-empty`
 
 - [ ] **Step 9: Circuit flow (runtime)**
   - "Start Circuit" button on Main Menu → Circuit Selection screen

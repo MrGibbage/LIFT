@@ -21,6 +21,9 @@ let editingCircuitId = null;
 /** Whether the management screen is currently in drag-to-reorder mode. */
 let isReorderMode = false;
 
+/** The <li> element currently being dragged in the circuit selected list. @type {HTMLElement|null} */
+let _circuitDraggingEl = null;
+
 // ── DOM Ready ─────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -457,6 +460,14 @@ async function handleSaveWeight() {
  * Implemented in Step 6.
  */
 async function loadManagement() {
+  // Reset reorder-mode UI regardless of how we arrived here
+  document.getElementById('reorder-banner').classList.add('hidden');
+  document.getElementById('reorder-actions').classList.add('hidden');
+  document.getElementById('btn-reorder').classList.remove('hidden');
+  document.getElementById('section-add-machine').classList.remove('hidden');
+  document.getElementById('section-circuits').classList.remove('hidden');
+  document.getElementById('section-data').classList.remove('hidden');
+
   const machines = await getAllFromStore('machines');
   machines.sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -510,6 +521,46 @@ async function loadManagement() {
     li.appendChild(nameSpan);
     li.appendChild(actions);
     list.appendChild(li);
+  });
+
+  // Render circuits section
+  const circuits = await getAllFromStore('circuits');
+  const circuitList = document.getElementById('circuit-mgmt-list');
+  const circuitEmpty = document.getElementById('circuit-mgmt-empty');
+  circuitList.innerHTML = '';
+  circuitEmpty.classList.toggle('hidden', circuits.length > 0);
+
+  circuits.forEach((circuit) => {
+    const li = document.createElement('li');
+    li.className = 'mgmt-item';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'mgmt-item-name';
+    nameSpan.textContent = circuit.name;
+
+    const actions = document.createElement('div');
+    actions.className = 'mgmt-item-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-secondary btn-sm';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => goToCircuitEditor(circuit.id));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-danger btn-sm';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => {
+      showConfirm(
+        `Delete circuit "${circuit.name}"?`,
+        () => deleteCircuit(circuit.id)
+      );
+    });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+    li.appendChild(nameSpan);
+    li.appendChild(actions);
+    circuitList.appendChild(li);
   });
 }
 
@@ -642,8 +693,26 @@ async function deleteMachine(machineId) {
  * Implemented in Step 7.
  */
 function enterReorderMode() {
-  // TODO (Step 7)
-  console.log('enterReorderMode: stub');
+  isReorderMode = true;
+
+  document.getElementById('reorder-banner').classList.remove('hidden');
+  document.getElementById('reorder-actions').classList.remove('hidden');
+  document.getElementById('btn-reorder').classList.add('hidden');
+  document.getElementById('section-add-machine').classList.add('hidden');
+  document.getElementById('section-circuits').classList.add('hidden');
+  document.getElementById('section-data').classList.add('hidden');
+
+  const list = document.getElementById('machine-mgmt-list');
+  list.querySelectorAll('li').forEach((li) => {
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    li.prepend(handle);
+    const actions = li.querySelector('.mgmt-item-actions');
+    if (actions) actions.classList.add('hidden');
+  });
+
+  attachReorderDragHandlers();
 }
 
 /**
@@ -652,8 +721,64 @@ function enterReorderMode() {
  * Implemented in Step 7.
  */
 async function exitReorderMode(save) {
-  // TODO (Step 7)
-  console.log('exitReorderMode: stub', save);
+  if (save) {
+    const list = document.getElementById('machine-mgmt-list');
+    const items = [...list.querySelectorAll('li')];
+    await Promise.all(
+      items.map(async (li, index) => {
+        const machineId = li.dataset.machineId;
+        const machine = await getRecord('machines', machineId);
+        if (machine) {
+          await putRecord('machines', { ...machine, sortOrder: index });
+        }
+      })
+    );
+    showToast('Order saved');
+  }
+  goToManagement();
+}
+
+/**
+ * Attach touch-based drag-and-drop handlers to all drag handles in the machine list.
+ * Uses touch events (touchstart/touchmove/touchend) for Android Chrome compatibility.
+ * Reorders the DOM live as the user drags; saving happens only when Done is tapped.
+ */
+function attachReorderDragHandlers() {
+  const list = document.getElementById('machine-mgmt-list');
+  let draggingEl = null;
+
+  list.querySelectorAll('.drag-handle').forEach((handle) => {
+    handle.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      draggingEl = handle.closest('li');
+      draggingEl.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', (e) => {
+      if (!draggingEl) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const siblings = [...list.querySelectorAll('li:not(.dragging)')];
+      let target = null;
+      let before = true;
+      for (const el of siblings) {
+        const rect = el.getBoundingClientRect();
+        if (y >= rect.top && y <= rect.bottom) {
+          target = el;
+          before = y < rect.top + rect.height / 2;
+          break;
+        }
+      }
+      if (!target) return;
+      list.insertBefore(draggingEl, before ? target : target.nextSibling);
+    }, { passive: false });
+
+    handle.addEventListener('touchend', () => {
+      if (!draggingEl) return;
+      draggingEl.classList.remove('dragging');
+      draggingEl = null;
+    });
+  });
 }
 
 // ── Circuit Select ────────────────────────────────────────────────────────────
@@ -690,9 +815,169 @@ async function startCircuit(circuitId) {
  * Implemented in Step 8.
  */
 async function loadCircuitEditor() {
-  // TODO (Step 8): if editingCircuitId, load existing circuit data into form;
-  // load all machines into available list; render selected machines
-  console.log('loadCircuitEditor: stub', editingCircuitId);
+  document.getElementById('circuit-editor-title').textContent =
+    editingCircuitId ? 'Edit Circuit' : 'New Circuit';
+
+  const allMachines = await getAllFromStore('machines');
+  allMachines.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const nameInput    = document.getElementById('circuit-name-input');
+  const selectedList = document.getElementById('circuit-selected-list');
+  const selectedEmpty = document.getElementById('circuit-selected-empty');
+  const availableList = document.getElementById('circuit-available-list');
+
+  selectedList.innerHTML  = '';
+  availableList.innerHTML = '';
+
+  const machineMap = new Map(allMachines.map((m) => [m.id, m]));
+  let selectedIds = [];
+
+  if (editingCircuitId) {
+    const circuit = await getRecord('circuits', editingCircuitId);
+    if (circuit) {
+      nameInput.value = circuit.name;
+      selectedIds = circuit.machineIds.filter((id) => machineMap.has(id));
+    } else {
+      nameInput.value = '';
+    }
+  } else {
+    nameInput.value = '';
+  }
+
+  selectedIds.forEach((id) => {
+    selectedList.appendChild(buildCircuitSelectedItem(machineMap.get(id)));
+  });
+
+  const selectedSet = new Set(selectedIds);
+  allMachines.forEach((machine) => {
+    if (!selectedSet.has(machine.id)) {
+      availableList.appendChild(buildCircuitAvailableItem(machine));
+    }
+  });
+
+  selectedEmpty.classList.toggle('hidden', selectedList.children.length > 0);
+  attachCircuitDragHandlers();
+}
+
+/** Build a list item for the "In This Circuit" selected list. */
+function buildCircuitSelectedItem(machine) {
+  const li = document.createElement('li');
+  li.className = 'mgmt-item';
+  li.dataset.machineId = machine.id;
+
+  const handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.textContent = '⠿';
+
+  const img = document.createElement('img');
+  img.className = 'mgmt-item-thumb';
+  img.alt = machine.name;
+  img.src = machine.imageBlob
+    ? URL.createObjectURL(machine.imageBlob)
+    : 'icons/default-machine.svg';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'mgmt-item-name';
+  nameSpan.textContent = machine.name;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn btn-danger btn-sm';
+  removeBtn.textContent = '×';
+  removeBtn.setAttribute('aria-label', `Remove ${machine.name}`);
+  removeBtn.addEventListener('click', () => {
+    li.remove();
+    document.getElementById('circuit-available-list')
+      .appendChild(buildCircuitAvailableItem(machine));
+    const selectedList = document.getElementById('circuit-selected-list');
+    document.getElementById('circuit-selected-empty')
+      .classList.toggle('hidden', selectedList.children.length > 0);
+  });
+
+  li.appendChild(handle);
+  li.appendChild(img);
+  li.appendChild(nameSpan);
+  li.appendChild(removeBtn);
+  return li;
+}
+
+/** Build a list item for the "Available Machines" list. */
+function buildCircuitAvailableItem(machine) {
+  const li = document.createElement('li');
+  li.className = 'mgmt-item';
+  li.dataset.machineId = machine.id;
+
+  const img = document.createElement('img');
+  img.className = 'mgmt-item-thumb';
+  img.alt = machine.name;
+  img.src = machine.imageBlob
+    ? URL.createObjectURL(machine.imageBlob)
+    : 'icons/default-machine.svg';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'mgmt-item-name';
+  nameSpan.textContent = machine.name;
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-secondary btn-sm';
+  addBtn.textContent = '+';
+  addBtn.setAttribute('aria-label', `Add ${machine.name}`);
+  addBtn.addEventListener('click', () => {
+    li.remove();
+    const selectedList = document.getElementById('circuit-selected-list');
+    selectedList.appendChild(buildCircuitSelectedItem(machine));
+    attachCircuitDragHandlers();
+    document.getElementById('circuit-selected-empty')
+      .classList.toggle('hidden', selectedList.children.length > 0);
+  });
+
+  li.appendChild(img);
+  li.appendChild(nameSpan);
+  li.appendChild(addBtn);
+  return li;
+}
+
+/**
+ * Attach touch drag-and-drop to unregistered handles in #circuit-selected-list.
+ * Uses _circuitDraggingEl (module-level) to avoid closure issues across calls.
+ */
+function attachCircuitDragHandlers() {
+  const list = document.getElementById('circuit-selected-list');
+
+  list.querySelectorAll('.drag-handle').forEach((handle) => {
+    if (handle.dataset.dragAttached) return;
+    handle.dataset.dragAttached = 'true';
+
+    handle.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      _circuitDraggingEl = handle.closest('li');
+      _circuitDraggingEl.classList.add('dragging');
+    }, { passive: false });
+
+    handle.addEventListener('touchmove', (e) => {
+      if (!_circuitDraggingEl) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const siblings = [...list.querySelectorAll('li:not(.dragging)')];
+      let target = null;
+      let before = true;
+      for (const el of siblings) {
+        const rect = el.getBoundingClientRect();
+        if (y >= rect.top && y <= rect.bottom) {
+          target = el;
+          before = y < rect.top + rect.height / 2;
+          break;
+        }
+      }
+      if (!target) return;
+      list.insertBefore(_circuitDraggingEl, before ? target : target.nextSibling);
+    }, { passive: false });
+
+    handle.addEventListener('touchend', () => {
+      if (!_circuitDraggingEl) return;
+      _circuitDraggingEl.classList.remove('dragging');
+      _circuitDraggingEl = null;
+    });
+  });
 }
 
 /**
@@ -700,9 +985,28 @@ async function loadCircuitEditor() {
  * Implemented in Step 8.
  */
 async function handleSaveCircuit() {
-  // TODO (Step 8): read #circuit-name-input and ordered machine list,
-  // putRecord('circuits', { id, name, machineIds }), goToManagement(), showToast()
-  console.log('handleSaveCircuit: stub');
+  const nameInput = document.getElementById('circuit-name-input');
+  const name = nameInput.value.trim();
+
+  if (!name) {
+    showToast('Enter a circuit name');
+    nameInput.focus();
+    return;
+  }
+
+  const selectedList = document.getElementById('circuit-selected-list');
+  const machineIds = [...selectedList.querySelectorAll('li')]
+    .map((li) => li.dataset.machineId);
+
+  if (machineIds.length === 0) {
+    showToast('Add at least one machine to the circuit');
+    return;
+  }
+
+  const id = editingCircuitId ?? slugify(name) + '-' + Date.now();
+  await putRecord('circuits', { id, name, machineIds });
+  showToast('Circuit saved');
+  goToManagement();
 }
 
 /**
@@ -711,8 +1015,9 @@ async function handleSaveCircuit() {
  * Implemented in Step 8.
  */
 async function deleteCircuit(circuitId) {
-  // TODO (Step 8)
-  console.log('deleteCircuit: stub', circuitId);
+  await deleteRecord('circuits', circuitId);
+  showToast('Circuit deleted');
+  loadManagement();
 }
 
 // ── Export / Import ───────────────────────────────────────────────────────────
