@@ -12,6 +12,7 @@ This file is the single source of truth for the LIFT project. You **must** keep 
 - If a new task is discovered mid-session, add it to the todo list in the right place.
 - Each new chat session will start by reading this file. Make sure a fresh LLM can get fully up to speed from this file alone.
 - Do not remove completed items — mark them done so progress is visible.
+- **After completing each step, always offer the user a concrete list of things they can manually test in the browser to verify the step works correctly.**
 
 ---
 
