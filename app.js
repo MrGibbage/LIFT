@@ -286,6 +286,22 @@ async function clearStore(storeName) {
   });
 }
 
+/**
+ * Get a single record by primary key.
+ * @param {string} storeName
+ * @param {string|number} key
+ * @returns {Promise<any>}
+ */
+async function getRecord(storeName, key) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.get(key);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 // ── Main Menu / Gallery ───────────────────────────────────────────────────────
 
 /**
@@ -338,30 +354,48 @@ function renderGallery(machines) {
  * Implemented in Step 4.
  */
 async function renderDetail() {
-  // TODO (Step 4): getAllFromStore('machines'), find by currentMachineId, populate DOM,
-  // call updateCompleteButton()
-  console.log('renderDetail: stub', currentMachineId);
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+
+  document.getElementById('detail-machine-name').textContent = machine.name;
+
+  const img = document.getElementById('detail-machine-image');
+  img.alt = machine.name;
+  if (machine.imageBlob) {
+    img.src = URL.createObjectURL(machine.imageBlob);
+  } else {
+    img.src = 'icons/default-machine.svg';
+  }
+
+  document.getElementById('detail-weight').textContent = machine.weightLbs;
+  document.getElementById('detail-last-used').textContent = machine.lastUsed || '—';
+
+  updateCompleteButton();
 }
 
 /**
  * Update #btn-complete label and behaviour based on circuit context.
- * Implemented in Step 4.
+ * Non-circuit mode implemented in Step 4. Circuit-aware routing stubbed for Step 9.
  */
 function updateCompleteButton() {
-  // TODO (Step 4):
-  // - No circuit: "Complete & Return to Gallery"
-  // - Circuit, not last: "Complete & Next: {nextMachineName}"
-  // - Circuit, last: "Complete & Finish Circuit"
+  // Circuit-aware labels (Step 9) — for now always non-circuit mode
+  document.getElementById('btn-complete').textContent = 'Complete & Return to Gallery';
 }
 
 /**
  * Called when the Complete button is tapped.
  * Logs the workout, updates lastUsed, then navigates appropriately.
- * Implemented in Step 4.
+ * Non-circuit routing implemented in Step 4. Circuit routing stubbed for Step 9.
  */
 async function handleComplete() {
-  // TODO (Step 4): logWorkout(), then route based on circuitState
-  console.log('handleComplete: stub');
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+
+  await logWorkout(machine.id, machine.weightLbs);
+  showToast('Workout logged');
+
+  // Circuit-aware routing (Step 9) — for now always return to gallery
+  goToMainMenu();
 }
 
 /**
@@ -371,9 +405,12 @@ async function handleComplete() {
  * Implemented in Step 4.
  */
 async function logWorkout(machineId, weightLbs) {
-  // TODO (Step 4): putRecord('workouts', { machineId, weightLbs, date: today })
-  //               putRecord('machines', { ...machine, lastUsed: today })
-  console.log('logWorkout: stub', machineId, weightLbs);
+  const today = todayISO();
+  await putRecord('workouts', { machineId, weightLbs, date: today });
+  const machine = await getRecord('machines', machineId);
+  if (machine) {
+    await putRecord('machines', { ...machine, lastUsed: today });
+  }
 }
 
 // ── Weight Adjustment ─────────────────────────────────────────────────────────

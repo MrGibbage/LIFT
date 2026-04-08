@@ -204,12 +204,13 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - Card tap wired to `goToDetail(machine.id)`
   - Manage button was already wired to `goToManagement()` in Step 1
 
-- [ ] **Step 4: Machine Detail screen**
-  - Render machine image, name, weightLbs, lastUsed
-  - Implement "Adjust Weight" and "Back" navigation
-  - Implement Complete buttons (non-circuit mode only for now)
-  - Implement workout logging (write to `workouts` store, update `lastUsed`)
-  - Show toast on successful log
+- [x] **Step 4: Machine Detail screen**
+  - Added `getRecord(storeName, key)` IDB helper (used by renderDetail, handleComplete, logWorkout, and later Step 5)
+  - `renderDetail()` fetches machine by `currentMachineId`, populates `#detail-machine-name`, `#detail-machine-image` (imageBlob → createObjectURL or default SVG), `#detail-weight`, `#detail-last-used`, calls `updateCompleteButton()`
+  - `updateCompleteButton()` sets btn-complete text to "Complete & Return to Gallery"; circuit-aware labels stubbed for Step 9
+  - `handleComplete()` calls `logWorkout()`, shows toast "Workout logged", navigates to Main Menu; circuit routing stubbed for Step 9
+  - `logWorkout(machineId, weightLbs)` writes `{ machineId, weightLbs, date }` to workouts store, updates `machines.lastUsed` to today
+  - Back button (`btn-detail-back`) already wired in Step 1 → clears circuitState, goToMainMenu()
 
 - [ ] **Step 5: Weight Adjustment screen**
   - Render machine name and current weight
