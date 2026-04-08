@@ -775,8 +775,9 @@ function showConfirm(message, onConfirm) {
   const newBtn = btnOk.cloneNode(true);
   btnOk.parentNode.replaceChild(newBtn, btnOk);
   newBtn.addEventListener('click', () => {
+    const cb = _confirmCallback;
     hideConfirm();
-    if (_confirmCallback) _confirmCallback();
+    if (cb) cb();
   });
 }
 
