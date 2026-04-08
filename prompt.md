@@ -198,11 +198,11 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
 
 ### Phase 2 — Core Screens
 
-- [ ] **Step 3: Main Menu gallery**
-  - Fetch all machines from DB, sorted by `sortOrder`
-  - Render machine cards (image or default icon, name)
-  - Wire up card tap → Machine Detail navigation
-  - Wire up Manage button → Management screen
+- [x] **Step 3: Main Menu gallery**
+  - `loadGallery()` fetches all machines from DB via `getAllFromStore('machines')`, sorts by `sortOrder`, calls `renderGallery()`
+  - `renderGallery()` clears `#gallery-grid`, toggles `#gallery-empty` empty state, builds `.machine-card` elements using safe DOM methods (no innerHTML for user data); converts `imageBlob` → `URL.createObjectURL()` or falls back to `icons/default-machine.svg`
+  - Card tap wired to `goToDetail(machine.id)`
+  - Manage button was already wired to `goToManagement()` in Step 1
 
 - [ ] **Step 4: Machine Detail screen**
   - Render machine image, name, weightLbs, lastUsed

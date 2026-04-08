@@ -293,9 +293,9 @@ async function clearStore(storeName) {
  * Implemented in Step 3.
  */
 async function loadGallery() {
-  // TODO (Step 3): getAllFromStore('machines'), sort by sortOrder, call renderGallery()
-  console.log('loadGallery: stub');
-  renderGallery([]);
+  const machines = await getAllFromStore('machines');
+  machines.sort((a, b) => a.sortOrder - b.sortOrder);
+  renderGallery(machines);
 }
 
 /**
@@ -303,20 +303,29 @@ async function loadGallery() {
  * @param {object[]} machines - sorted array of machine records
  */
 function renderGallery(machines) {
-  // TODO (Step 3): Build .machine-card elements, wire up click → goToDetail(machine.id)
   const grid = document.getElementById('gallery-grid');
   const empty = document.getElementById('gallery-empty');
   grid.innerHTML = '';
   empty.classList.toggle('hidden', machines.length > 0);
+
   machines.forEach((machine) => {
-    // placeholder card — Step 3 will flesh this out with real images
     const card = document.createElement('div');
     card.className = 'machine-card';
     card.dataset.machineId = machine.id;
-    card.innerHTML = `
-      <img class="machine-card-image" src="${machine.imageSrc ?? 'icons/default-machine.svg'}" alt="${machine.name}" />
-      <span class="machine-card-name">${machine.name}</span>
-    `;
+
+    const img = document.createElement('img');
+    img.className = 'machine-card-image';
+    img.alt = machine.name;
+    img.src = machine.imageBlob
+      ? URL.createObjectURL(machine.imageBlob)
+      : 'icons/default-machine.svg';
+
+    const label = document.createElement('span');
+    label.className = 'machine-card-name';
+    label.textContent = machine.name;
+
+    card.appendChild(img);
+    card.appendChild(label);
     card.addEventListener('click', () => goToDetail(machine.id));
     grid.appendChild(card);
   });
