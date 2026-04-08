@@ -420,9 +420,12 @@ async function logWorkout(machineId, weightLbs) {
  * Implemented in Step 5.
  */
 async function renderAdjustWeight() {
-  // TODO (Step 5): populate #adjust-machine-name and #adjust-current-weight,
-  // pre-fill #weight-input with current value
-  console.log('renderAdjustWeight: stub', currentMachineId);
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+
+  document.getElementById('adjust-machine-name').textContent = machine.name;
+  document.getElementById('adjust-current-weight').textContent = machine.weightLbs;
+  document.getElementById('weight-input').value = machine.weightLbs;
 }
 
 /**
@@ -430,9 +433,21 @@ async function renderAdjustWeight() {
  * Implemented in Step 5.
  */
 async function handleSaveWeight() {
-  // TODO (Step 5): read #weight-input, validate > 0, putRecord('machines', ...),
-  // showToast('Weight saved'), goToDetail(currentMachineId)
-  console.log('handleSaveWeight: stub');
+  const input = document.getElementById('weight-input');
+  const newWeight = parseFloat(input.value);
+
+  if (!newWeight || newWeight <= 0) {
+    showToast('Enter a weight greater than 0');
+    input.focus();
+    return;
+  }
+
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+
+  await putRecord('machines', { ...machine, weightLbs: newWeight });
+  showToast('Weight saved');
+  goToDetail(currentMachineId);
 }
 
 // ── Management ────────────────────────────────────────────────────────────────

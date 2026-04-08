@@ -213,11 +213,10 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - `logWorkout(machineId, weightLbs)` writes `{ machineId, weightLbs, date }` to workouts store, updates `machines.lastUsed` to today
   - Back button (`btn-detail-back`) already wired in Step 1 → clears circuitState, goToMainMenu()
 
-- [ ] **Step 5: Weight Adjustment screen**
-  - Render machine name and current weight
-  - Number input, Save + Cancel
-  - Save updates `machines.weightLbs` in DB
-  - Navigate back to Machine Detail on save/cancel
+- [x] **Step 5: Weight Adjustment screen**
+  - `renderAdjustWeight()` fetches machine by `currentMachineId`, populates `#adjust-machine-name`, `#adjust-current-weight`, and pre-fills `#weight-input` with current weight
+  - `handleSaveWeight()` reads and parses `#weight-input`, validates > 0 (shows toast and refocuses on failure), updates `machines.weightLbs` via `putRecord`, shows "Weight saved" toast, calls `goToDetail(currentMachineId)` to re-render detail screen with refreshed data
+  - Cancel and Back buttons already wired in Step 1 → `showScreen('detail-screen')` (no DB change)
 
 ### Phase 3 — Management
 
