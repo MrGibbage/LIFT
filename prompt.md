@@ -158,6 +158,7 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
   app.js
   manifest.json
   sw.js
+  DEV.md             (developer notes: DB reset, schema reference, SW caching tips)
   /icons
     icon-192.png
     icon-512.png
@@ -189,11 +190,11 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - Created `/icons/default-machine.svg` (dumbbell icon, teal on dark), `/icons/icon-192.svg` and `/icons/icon-512.svg` (LIFT lettermark with dumbbell accent)
   - Navigation stubs all wired; app loads and transitions between screens without errors
 
-- [ ] **Step 2: IndexedDB setup**
-  - Implement DB open/upgrade logic in `app.js` (`liftDB`, version 1)
-  - Create all three object stores with correct indexes
-  - Seed with 1–2 test machines for development
-  - Verify DB is created correctly in Chrome DevTools
+- [x] **Step 2: IndexedDB setup**
+  - Implemented `openDB()`: opens `liftDB` v1, creates `machines` (keyPath `id`, index on `name`), `workouts` (autoIncrement, index on `machineId`), and `circuits` (keyPath `id`) stores in `onupgradeneeded`
+  - Seeds two test machines (Leg Press / Chest Press) on first open via the upgrade handler
+  - Implemented `getAllFromStore`, `putRecord`, `deleteRecord`, `clearStore` as promise wrappers around the IDB request pattern
+  - Verify DB is created correctly in Chrome DevTools (Application → IndexedDB → liftDB)
 
 ### Phase 2 — Core Screens
 

@@ -177,10 +177,51 @@ function initNavigation() {
  * @returns {Promise<void>}
  */
 async function openDB() {
-  // TODO (Step 2): Implement IDBOpenDBRequest for 'liftDB' version 1.
-  // Create object stores: machines (keyPath: 'id'), workouts (autoIncrement),
-  // circuits (keyPath: 'id'). Add indexes on machines.name and workouts.machineId.
-  console.log('openDB: stub — IndexedDB not yet implemented');
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('liftDB', 1);
+
+    request.onupgradeneeded = (event) => {
+      const idb = event.target.result;
+
+      const machinesStore = idb.createObjectStore('machines', { keyPath: 'id' });
+      machinesStore.createIndex('name', 'name', { unique: false });
+
+      const workoutsStore = idb.createObjectStore('workouts', { autoIncrement: true });
+      workoutsStore.createIndex('machineId', 'machineId', { unique: false });
+
+      idb.createObjectStore('circuits', { keyPath: 'id' });
+
+      // Seed two test machines for development
+      const today = new Date().toISOString().slice(0, 10);
+      const now = Date.now();
+      machinesStore.add({
+        id: 'leg-press-' + now,
+        name: 'Leg Press',
+        weightLbs: 100,
+        lastUsed: today,
+        imageBlob: null,
+        sortOrder: 0,
+      });
+      machinesStore.add({
+        id: 'chest-press-' + (now + 1),
+        name: 'Chest Press',
+        weightLbs: 60,
+        lastUsed: today,
+        imageBlob: null,
+        sortOrder: 1,
+      });
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      console.error('openDB failed:', event.target.error);
+      reject(event.target.error);
+    };
+  });
 }
 
 /**
@@ -189,9 +230,13 @@ async function openDB() {
  * @returns {Promise<any[]>}
  */
 async function getAllFromStore(storeName) {
-  // TODO (Step 2): Return IDBObjectStore.getAll() as a promise
-  console.log('getAllFromStore: stub', storeName);
-  return [];
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
 }
 
 /**
@@ -201,8 +246,13 @@ async function getAllFromStore(storeName) {
  * @returns {Promise<void>}
  */
 async function putRecord(storeName, record) {
-  // TODO (Step 2): Wrap IDBObjectStore.put() in a promise
-  console.log('putRecord: stub', storeName, record);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.put(record);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
 }
 
 /**
@@ -212,8 +262,13 @@ async function putRecord(storeName, record) {
  * @returns {Promise<void>}
  */
 async function deleteRecord(storeName, key) {
-  // TODO (Step 2): Wrap IDBObjectStore.delete() in a promise
-  console.log('deleteRecord: stub', storeName, key);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.delete(key);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
 }
 
 /**
@@ -222,8 +277,13 @@ async function deleteRecord(storeName, key) {
  * @returns {Promise<void>}
  */
 async function clearStore(storeName) {
-  // TODO (Step 2): Wrap IDBObjectStore.clear() in a promise
-  console.log('clearStore: stub', storeName);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
 }
 
 // ── Main Menu / Gallery ───────────────────────────────────────────────────────
