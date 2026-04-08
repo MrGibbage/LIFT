@@ -1,0 +1,733 @@
+/* ── CSS Custom Properties ─────────────────────────────────────────────────── */
+:root {
+  --color-bg:         #121212;
+  --color-surface:    #1e1e1e;
+  --color-surface-2:  #2a2a2a;
+  --color-surface-3:  #333333;
+  --color-accent:     #4db6ac;
+  --color-accent-dim: #3a8c84;
+  --color-danger:     #ef5350;
+  --color-danger-dim: #b71c1c;
+  --color-text:       #e0e0e0;
+  --color-text-muted: #9e9e9e;
+  --color-border:     #3a3a3a;
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+
+  --header-height: 56px;
+  --touch-min:     48px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input, label {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ── Utility ───────────────────────────────────────────────────────────────── */
+.hidden {
+  display: none !important;
+}
+
+/* ── Screen Layout ─────────────────────────────────────────────────────────── */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--color-bg);
+}
+
+.screen > main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 32px;
+}
+
+/* ── App Header ────────────────────────────────────────────────────────────── */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: 0.1em;
+}
+
+.screen-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+  text-align: center;
+  /* prevent title from overflowing under back button */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: #000;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-dim);
+}
+
+.btn-secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-3);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  padding: 0 8px;
+}
+
+.btn-ghost:hover {
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--color-danger-dim);
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+}
+
+.btn-back {
+  min-width: 64px;
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+/* ── Gallery Grid ──────────────────────────────────────────────────────────── */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.machine-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  min-height: var(--touch-min);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.machine-card:active {
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
+}
+
+.machine-card-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--color-surface-2);
+}
+
+.machine-card-name {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Empty States ──────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 32px 16px;
+  font-size: 0.95rem;
+}
+
+/* ── Machine Detail ────────────────────────────────────────────────────────── */
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.machine-image-container {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+}
+
+.machine-image-container img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.detail-info {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.weight-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weight-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.weight-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.weight-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.weight-unit {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+}
+
+.last-used-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.last-used-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.last-used-value {
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-actions .btn {
+  width: 100%;
+}
+
+/* ── Weight Adjustment ─────────────────────────────────────────────────────── */
+.adjust-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.current-weight-display {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.adjust-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.form-input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  padding: 12px 14px;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus {
+  border-color: var(--color-accent);
+}
+
+.form-input-large {
+  font-size: 1.8rem;
+  text-align: center;
+  padding: 16px;
+  font-weight: 600;
+}
+
+.adjust-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.adjust-actions .btn {
+  flex: 1;
+}
+
+/* ── Management Screen ─────────────────────────────────────────────────────── */
+.mgmt-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+.section-header-row .section-title {
+  margin-bottom: 0;
+}
+
+.add-machine-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.file-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-label {
+  flex-shrink: 0;
+}
+
+.file-name-display {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hidden-file-input {
+  display: none !important;
+}
+
+/* ── Management List Items ─────────────────────────────────────────────────── */
+.mgmt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mgmt-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  min-height: var(--touch-min);
+}
+
+.mgmt-item-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--color-surface-3);
+  flex-shrink: 0;
+}
+
+.mgmt-item-name {
+  flex: 1;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mgmt-item-name-input {
+  flex: 1;
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 6px 8px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.mgmt-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.btn-icon.btn-icon-danger:hover {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  padding: 0 4px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* ── Reorder Banner & Actions ──────────────────────────────────────────────── */
+.reorder-banner {
+  background: var(--color-accent);
+  color: #000;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.reorder-actions {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+}
+
+.reorder-actions .btn {
+  flex: 1;
+}
+
+/* ── Data Actions ──────────────────────────────────────────────────────────── */
+.data-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.data-actions .btn,
+.data-actions label.btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ── Circuit List Items ─────────────────────────────────────────────────────── */
+.list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  min-height: var(--touch-min);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.list-item:active {
+  background: var(--color-surface-2);
+  border-color: var(--color-accent);
+}
+
+.list-item-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.list-item-chevron {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+/* ── Circuit Editor ────────────────────────────────────────────────────────── */
+.circuit-name-form {
+  margin-bottom: 0;
+}
+
+.circuit-order-list .mgmt-item {
+  cursor: default;
+}
+
+.circuit-editor-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.circuit-editor-actions .btn {
+  flex: 1;
+}
+
+.hint-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  margin-top: -4px;
+}
+
+/* ── Toast / Snackbar ──────────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+
+.toast {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  animation: toast-in 0.2s ease, toast-out 0.3s ease 2.5s forwards;
+  pointer-events: auto;
+  max-width: 100%;
+  text-align: center;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ── Confirmation Dialog ───────────────────────────────────────────────────── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+}
+
+.confirm-box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.confirm-message {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+}

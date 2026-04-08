@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#121212" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LIFT" />
+  <meta name="description" content="Offline workout tracker for weight machines" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.svg" />
+  <link rel="stylesheet" href="style.css" />
+
+  <title>LIFT</title>
+</head>
+<body>
+
+  <!-- ── Screen 1: Main Menu / Dashboard ────────────────────────────────── -->
+  <div id="main-menu" class="screen">
+    <header class="app-header">
+      <h1 class="app-title">LIFT</h1>
+      <div class="header-actions">
+        <button id="btn-start-circuit" class="btn btn-secondary">Start Circuit</button>
+        <button id="btn-manage" class="btn btn-secondary">Manage</button>
+      </div>
+    </header>
+    <main>
+      <div id="gallery-grid" class="gallery-grid"></div>
+      <p id="gallery-empty" class="empty-state hidden">
+        No machines yet. Tap <strong>Manage</strong> to add one.
+      </p>
+    </main>
+  </div>
+
+  <!-- ── Screen 2: Circuit Selection ────────────────────────────────────── -->
+  <div id="circuit-select" class="screen hidden">
+    <header class="app-header">
+      <button id="btn-circuit-select-back" class="btn btn-ghost btn-back">← Back</button>
+      <h2 class="screen-title">Select Circuit</h2>
+    </header>
+    <main>
+      <ul id="circuit-select-list" class="list-items"></ul>
+      <p id="circuit-select-empty" class="empty-state hidden">
+        No circuits saved. Add one in <strong>Manage</strong>.
+      </p>
+    </main>
+  </div>
+
+  <!-- ── Screen 3: Machine Detail / Logging ─────────────────────────────── -->
+  <div id="detail-screen" class="screen hidden">
+    <header class="app-header">
+      <button id="btn-detail-back" class="btn btn-ghost btn-back">← Back</button>
+      <h2 id="detail-machine-name" class="screen-title"></h2>
+    </header>
+    <main class="detail-content">
+      <div class="machine-image-container">
+        <img id="detail-machine-image" src="icons/default-machine.svg" alt="Machine" />
+      </div>
+      <div class="detail-info">
+        <div class="weight-display">
+          <span class="weight-label">Current Weight</span>
+          <div class="weight-value-row">
+            <span id="detail-weight" class="weight-value">—</span>
+            <span class="weight-unit">lbs</span>
+          </div>
+        </div>
+        <div class="last-used-row">
+          <span class="last-used-label">Last used:</span>
+          <span id="detail-last-used" class="last-used-value">—</span>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button id="btn-adjust-weight" class="btn btn-secondary">Adjust Weight</button>
+        <button id="btn-complete" class="btn btn-primary">Complete &amp; Return to Gallery</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Screen 4: Weight Adjustment ────────────────────────────────────── -->
+  <div id="adjust-weight-screen" class="screen hidden">
+    <header class="app-header">
+      <button id="btn-adjust-back" class="btn btn-ghost btn-back">← Back</button>
+      <h2 id="adjust-machine-name" class="screen-title"></h2>
+    </header>
+    <main class="adjust-content">
+      <div class="current-weight-display">
+        Current: <span id="adjust-current-weight">—</span> lbs
+      </div>
+      <div class="adjust-form">
+        <label for="weight-input" class="form-label">New Weight (lbs)</label>
+        <input
+          type="number"
+          id="weight-input"
+          class="form-input form-input-large"
+          min="0"
+          step="any"
+          inputmode="decimal"
+          placeholder="0"
+        />
+      </div>
+      <div class="adjust-actions">
+        <button id="btn-weight-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="btn-weight-save" class="btn btn-primary">Save</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Screen 5: Management ────────────────────────────────────────────── -->
+  <div id="management-screen" class="screen hidden">
+    <header class="app-header">
+      <button id="btn-management-back" class="btn btn-ghost btn-back">← Back</button>
+      <h2 class="screen-title">Manage</h2>
+    </header>
+
+    <!-- Reorder mode banner (shown only in reorder mode) -->
+    <div id="reorder-banner" class="reorder-banner hidden">
+      Reorder Mode — drag to rearrange
+    </div>
+
+    <main id="management-main">
+
+      <!-- Add Machine -->
+      <section class="mgmt-section" id="section-add-machine">
+        <h3 class="section-title">Add Machine</h3>
+        <div class="add-machine-form">
+          <input
+            type="text"
+            id="new-machine-name"
+            class="form-input"
+            placeholder="Machine name"
+            autocomplete="off"
+          />
+          <div class="file-input-row">
+            <label class="btn btn-secondary btn-sm file-label" for="new-machine-image">
+              Choose Image
+            </label>
+            <span id="new-machine-image-name" class="file-name-display">No file chosen</span>
+            <input
+              type="file"
+              id="new-machine-image"
+              accept="image/*"
+              class="hidden-file-input"
+            />
+          </div>
+          <button id="btn-add-machine" class="btn btn-primary">Add Machine</button>
+        </div>
+      </section>
+
+      <!-- Machine List -->
+      <section class="mgmt-section" id="section-machine-list">
+        <div class="section-header-row">
+          <h3 class="section-title">Machines</h3>
+          <button id="btn-reorder" class="btn btn-secondary btn-sm">Reorder</button>
+        </div>
+        <ul id="machine-mgmt-list" class="mgmt-list"></ul>
+        <p id="machine-mgmt-empty" class="empty-state hidden">No machines yet.</p>
+      </section>
+
+      <!-- Circuit Management -->
+      <section class="mgmt-section" id="section-circuits">
+        <div class="section-header-row">
+          <h3 class="section-title">Circuits</h3>
+          <button id="btn-add-circuit" class="btn btn-secondary btn-sm">Add Circuit</button>
+        </div>
+        <ul id="circuit-mgmt-list" class="mgmt-list"></ul>
+        <p id="circuit-mgmt-empty" class="empty-state hidden">No circuits yet.</p>
+      </section>
+
+      <!-- Data -->
+      <section class="mgmt-section" id="section-data">
+        <h3 class="section-title">Data</h3>
+        <div class="data-actions">
+          <button id="btn-export" class="btn btn-secondary">Export Data</button>
+          <label class="btn btn-secondary" for="import-file-input">Import Data</label>
+          <input
+            type="file"
+            id="import-file-input"
+            accept=".json"
+            class="hidden-file-input"
+          />
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Reorder mode action bar (shown only in reorder mode) -->
+    <div id="reorder-actions" class="reorder-actions hidden">
+      <button id="btn-reorder-cancel" class="btn btn-secondary">Cancel</button>
+      <button id="btn-reorder-done" class="btn btn-primary">Done Reordering</button>
+    </div>
+  </div>
+
+  <!-- ── Screen 6: Circuit Editor ────────────────────────────────────────── -->
+  <div id="circuit-editor" class="screen hidden">
+    <header class="app-header">
+      <button id="btn-circuit-editor-back" class="btn btn-ghost btn-back">← Back</button>
+      <h2 id="circuit-editor-title" class="screen-title">New Circuit</h2>
+    </header>
+    <main>
+      <div class="circuit-name-form mgmt-section">
+        <label for="circuit-name-input" class="form-label">Circuit Name</label>
+        <input
+          type="text"
+          id="circuit-name-input"
+          class="form-input"
+          placeholder="e.g. Full Body A"
+          autocomplete="off"
+        />
+      </div>
+
+      <section class="mgmt-section">
+        <h3 class="section-title">In This Circuit</h3>
+        <p class="hint-text">Drag to reorder. Tap × to remove.</p>
+        <ul id="circuit-selected-list" class="mgmt-list circuit-order-list"></ul>
+        <p id="circuit-selected-empty" class="empty-state hidden">No machines added yet.</p>
+      </section>
+
+      <section class="mgmt-section">
+        <h3 class="section-title">Available Machines</h3>
+        <p class="hint-text">Tap + to add to circuit.</p>
+        <ul id="circuit-available-list" class="mgmt-list"></ul>
+      </section>
+
+      <div class="circuit-editor-actions">
+        <button id="btn-circuit-editor-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="btn-circuit-editor-save" class="btn btn-primary">Save Circuit</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── Toast container ────────────────────────────────────────────────── -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ── Confirmation dialog ────────────────────────────────────────────── -->
+  <div id="confirm-overlay" class="confirm-overlay hidden" role="dialog" aria-modal="true">
+    <div class="confirm-box">
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="btn-confirm-cancel" class="btn btn-secondary">Cancel</button>
+        <button id="btn-confirm-ok" class="btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

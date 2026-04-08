@@ -1,0 +1,293 @@
+# LIFT — Logging Individual Fitness Targets
+## Mobile-First Workout Tracker PWA
+
+---
+
+## IMPORTANT: Instructions for the LLM
+
+This file is the single source of truth for the LIFT project. You **must** keep it up to date as work progresses. Specifically:
+
+- After completing any todo item, mark it `[x]` and add a brief note of what was done (files created/changed, key decisions made).
+- If a decision is made during a session that affects architecture, data model, UX flow, or file structure, add it to the relevant section below.
+- If a new task is discovered mid-session, add it to the todo list in the right place.
+- Each new chat session will start by reading this file. Make sure a fresh LLM can get fully up to speed from this file alone.
+- Do not remove completed items — mark them done so progress is visible.
+
+---
+
+## Project Goal
+
+A fully offline, installable PWA for personal gym use. Tracks weight settings on ~12 weight machines. No backend — all data lives in IndexedDB on the device. Hosted on the user's homelab (HTTPS required for PWA install). Optimized for Android Chrome.
+
+**Tech stack:** HTML5, CSS3, Vanilla JS (ES6+, no frameworks), IndexedDB, PWA (manifest + service worker).
+
+---
+
+## Data Model (IndexedDB database: `liftDB`)
+
+### Object Store: `machines`
+- `id` — string, keyPath (e.g. `'leg-press-01'`, generated as slugified name + timestamp)
+- `name` — string
+- `weightLbs` — number
+- `lastUsed` — string (ISO date, e.g. `'2026-04-08'`)
+- `imageBlob` — Blob/File (photo of machine; nullable — falls back to default icon)
+- `sortOrder` — number (used for gallery ordering)
+- Index on `name`
+
+### Object Store: `workouts`
+- Key: auto-increment integer
+- `machineId` — string (FK → machines.id)
+- `weightLbs` — number
+- `date` — string (ISO date)
+- Index on `machineId`
+
+### Object Store: `circuits`
+- `id` — string, keyPath (slugified name + timestamp)
+- `name` — string
+- `machineIds` — array of machine id strings, in circuit order
+
+---
+
+## Screens & Navigation
+
+Navigation is handled by showing/hiding `<div>` sections (no routing library). A `.hidden` CSS class toggles visibility. State (current machine, current circuit, circuit position) is held in JS module-level variables.
+
+### 1. Main Menu / Dashboard (`#main-menu`)
+- Gallery grid of all machines (image + name on each card)
+- Tapping a machine card → Machine Detail screen (no circuit context)
+- **"Start Circuit" button** → Circuit Selection modal/screen
+- **"Manage" button** → Management screen
+
+### 2. Circuit Selection (`#circuit-select` or modal overlay)
+- Lists all saved circuits by name
+- Tapping a circuit → immediately navigates to the first machine in that circuit (sets circuit context in state)
+- "Cancel" returns to Main Menu
+
+### 3. Machine Detail / Logging (`#detail-screen`)
+- Large machine image (or default icon if none), machine name, current weight (lbs), last used date
+- **"Adjust Weight" button** → Weight Adjustment screen
+- **"Back" button** → Main Menu (clears circuit context)
+- **Complete buttons** — context-dependent:
+  - **Not in circuit mode:**
+    - "Complete & Return to Gallery" — logs workout, updates lastUsed, navigates to Main Menu
+  - **In circuit mode, not last machine:**
+    - "Complete & Next: {next machine name}" — logs workout, updates lastUsed, navigates to next machine in circuit
+  - **In circuit mode, last machine:**
+    - "Complete & Finish Circuit" — logs workout, updates lastUsed, navigates to Main Menu, clears circuit state
+- Logging a workout: writes a new record to `workouts` store with `machineId`, `weightLbs` (current weight), `date` (today ISO)
+
+### 4. Weight Adjustment (`#adjust-weight-screen`)
+- Shows machine name and current weightLbs
+- Single `<input type="number">` — user types the new weight directly (no +/- buttons)
+- **"Save"** — updates `machines.weightLbs` in DB, navigates back to Machine Detail
+- **"Cancel"** — navigates back to Machine Detail, no change
+
+### 5. Management (`#management-screen`)
+- **"Back"** button → Main Menu
+- **Add Machine** section: name text field + file input for image + "Add" button
+- **Machine List**: shows all machines with:
+  - Edit name (inline or small edit form)
+  - Delete (confirmation dialog required)
+  - Thumbnail image
+- **"Reorder Machines" button** → enters Reorder Mode (see below)
+- **Circuit Management** section: list of circuits, each with edit/delete options; "Add Circuit" button
+- **Export Data** button
+- **Import Data** button (with confirmation: "This will erase all existing data. Continue?")
+
+### 5a. Reorder Mode (within Management screen)
+- Triggered by "Reorder Machines" button
+- Shows machine list with drag-and-drop handles
+- A clear visual mode indicator (e.g. banner: "Reorder Mode — drag to rearrange")
+- **"Done Reordering"** button saves new `sortOrder` values to DB and exits reorder mode
+- **"Cancel"** exits without saving
+- No other management actions available while in reorder mode (prevents accidental taps)
+
+### 6. Circuit Editor (`#circuit-editor` or modal)
+- Name input field
+- Machine list (all machines) with checkboxes or add buttons to build the circuit
+- Drag-and-drop to set circuit order (within the selected machines list)
+- **"Save Circuit"** → writes to `circuits` store, returns to Management
+- **"Cancel"** → returns to Management
+
+---
+
+## PWA Configuration
+
+- `manifest.json`: name "LIFT", short_name "LIFT", display: standalone, start_url: "/", theme_color and background_color to match dark theme
+- `sw.js`: service worker using cache-first strategy for all app shell assets (HTML, CSS, JS, icons, default image)
+- Icons: generate at minimum 192×192 and 512×512 (PNG). Store in `/icons/` directory.
+- Default machine image: a clean SVG or PNG placeholder (dumbbell/barbell icon or similar gym graphic). Store as `/icons/default-machine.svg` or similar.
+
+---
+
+## Import / Export
+
+### Export
+- Reads all records from `machines`, `workouts`, and `circuits`
+- Converts `imageBlob` fields to Base64 strings
+- Packages as single JSON object: `{ version: 1, machines: [...], workouts: [...], circuits: [...] }`
+- Triggers browser download as `lift-export-{YYYY-MM-DD}.json`
+
+### Import
+- File input accepts `.json`
+- On selection: parse JSON, show confirmation dialog ("This will erase all existing data. Continue?")
+- On confirm: clear all three object stores, convert Base64 strings back to Blobs, write all records to DB, refresh UI
+- On cancel: do nothing
+
+---
+
+## UX Details
+
+- **Dark theme**, modern and professional — choose a clean accent color that looks good (e.g. a muted blue or green)
+- **Toast / snackbar** notifications for success actions (e.g. "Workout logged", "Weight saved", "Circuit saved")
+- **Confirmation dialogs** required for:
+  - Deleting a machine (note: also deletes all its workout history)
+  - Deleting a circuit
+  - Importing data (destructive)
+- Optimized for **Android Chrome** touch targets (min 48px tap targets)
+- All screens scroll vertically if content overflows — no horizontal scroll
+
+---
+
+## File Structure
+
+```
+/LIFT
+  index.html
+  style.css
+  app.js
+  manifest.json
+  sw.js
+  /icons
+    icon-192.png
+    icon-512.png
+    default-machine.svg   (or .png)
+```
+
+---
+
+## Deployment
+
+- Hosted on user's homelab (specific server TBD — likely Synology or a homelab web server)
+- Must be served over HTTPS for PWA install to work on Android
+- No build step — plain static files
+
+---
+
+## Plan of Action / Todo List
+
+Each step is intended to be a separate focused chat session. Mark items `[x]` when complete and note what was done.
+
+### Phase 1 — Foundation
+
+- [x] **Step 1: Project scaffold**
+  - Created `index.html` with all 6 screen divs (`#main-menu`, `#circuit-select`, `#detail-screen`, `#adjust-weight-screen`, `#management-screen`, `#circuit-editor`), toast container, confirm dialog overlay, and full PWA meta tags
+  - Created `style.css` with dark theme (`#121212` bg, `#4db6ac` teal accent), mobile-first layout, `.hidden` class, 2-col gallery grid, 48px touch targets, management list items, reorder banner, toast animation, confirm dialog
+  - Created `app.js` with DOMContentLoaded entry, `showScreen()` navigation helper, all button listeners wired, all major functions stubbed with TODO comments and step references (`slugify`, `todayISO`, `showToast`, `showConfirm` helpers fully implemented)
+  - Created `manifest.json` (name "LIFT", standalone, dark theme colors, SVG icons)
+  - Created `sw.js` (cache-first strategy, install/activate/fetch handlers, app shell list)
+  - Created `/icons/default-machine.svg` (dumbbell icon, teal on dark), `/icons/icon-192.svg` and `/icons/icon-512.svg` (LIFT lettermark with dumbbell accent)
+  - Navigation stubs all wired; app loads and transitions between screens without errors
+
+- [ ] **Step 2: IndexedDB setup**
+  - Implement DB open/upgrade logic in `app.js` (`liftDB`, version 1)
+  - Create all three object stores with correct indexes
+  - Seed with 1–2 test machines for development
+  - Verify DB is created correctly in Chrome DevTools
+
+### Phase 2 — Core Screens
+
+- [ ] **Step 3: Main Menu gallery**
+  - Fetch all machines from DB, sorted by `sortOrder`
+  - Render machine cards (image or default icon, name)
+  - Wire up card tap → Machine Detail navigation
+  - Wire up Manage button → Management screen
+
+- [ ] **Step 4: Machine Detail screen**
+  - Render machine image, name, weightLbs, lastUsed
+  - Implement "Adjust Weight" and "Back" navigation
+  - Implement Complete buttons (non-circuit mode only for now)
+  - Implement workout logging (write to `workouts` store, update `lastUsed`)
+  - Show toast on successful log
+
+- [ ] **Step 5: Weight Adjustment screen**
+  - Render machine name and current weight
+  - Number input, Save + Cancel
+  - Save updates `machines.weightLbs` in DB
+  - Navigate back to Machine Detail on save/cancel
+
+### Phase 3 — Management
+
+- [ ] **Step 6: Machine management (add/edit/delete)**
+  - Add Machine form (name + image upload)
+  - Display machine list with edit (name) and delete (with confirmation)
+  - Delete also removes all workout records for that machine
+
+- [ ] **Step 7: Machine reorder mode**
+  - "Reorder Machines" button enters reorder mode
+  - Drag-and-drop list (HTML5 drag API or touch-friendly library — keep it vanilla JS)
+  - Mode banner displayed
+  - Done / Cancel buttons
+  - On Done: update `sortOrder` for all machines in DB
+
+### Phase 4 — Circuits
+
+- [ ] **Step 8: Circuit editor**
+  - Add/edit circuit: name input + machine selector + drag-to-order
+  - Save to `circuits` store
+  - Delete circuit (with confirmation)
+
+- [ ] **Step 9: Circuit flow (runtime)**
+  - "Start Circuit" button on Main Menu → Circuit Selection screen
+  - Selecting a circuit sets circuit state (circuitId, machineIds array, currentIndex = 0)
+  - Machine Detail shows correct context-aware Complete buttons
+  - Circuit advances through machines in order
+  - Last machine → "Complete & Finish Circuit" clears circuit state
+
+### Phase 5 — Data Portability
+
+- [ ] **Step 10: Export**
+  - Read all stores, serialize blobs to Base64, package as JSON, trigger download
+
+- [ ] **Step 11: Import**
+  - File input, parse JSON, confirmation dialog, clear stores, restore data (Base64 → Blob)
+
+### Phase 6 — Polish & Deployment
+
+- [ ] **Step 12: PWA finalization**
+  - Finalize `manifest.json` (icons, colors, name)
+  - Finalize `sw.js` (cache all app shell assets, handle install/activate/fetch)
+  - Test PWA install prompt on Android Chrome
+
+- [ ] **Step 13: Polish**
+  - Toast/snackbar component wired to all relevant actions
+  - Confirmation dialog component
+  - Review all touch targets (min 48px)
+  - Test full circuit flow end-to-end
+  - Test import/export round-trip
+
+- [ ] **Step 14: Homelab deployment**
+  - Determine hosting location (Synology, nginx container, etc.)
+  - Deploy static files
+  - Confirm HTTPS
+  - Install PWA on Android phone
+  - Smoke test all features on device
+
+---
+
+## Decisions Log
+
+| Date | Decision |
+|------|----------|
+| 2026-04-08 | Weight unit: pounds only |
+| 2026-04-08 | No sets/reps — weight-only logging |
+| 2026-04-08 | No workout history view — current weight + last used date is sufficient |
+| 2026-04-08 | Machine sort order is manual; managed via drag-and-drop reorder mode on Management screen |
+| 2026-04-08 | Weight adjustment is a free-form number input, not +/- steppers (each machine has different increments) |
+| 2026-04-08 | Circuit feature added: named circuits with ordered machine lists; managed on Management screen |
+| 2026-04-08 | Complete buttons are context-aware: solo vs. circuit (mid) vs. circuit (last machine) |
+| 2026-04-08 | PWA: full install with manifest + service worker; hosted on homelab over HTTPS |
+| 2026-04-08 | Target device: Android Chrome (personal use only) |
+| 2026-04-08 | Default machine image: generic gym icon (SVG) in /icons/ |
+| 2026-04-08 | Confirmations required for: machine delete, circuit delete, import |
+| 2026-04-08 | No color scheme preference — LLM to choose modern dark theme with clean accent color |
