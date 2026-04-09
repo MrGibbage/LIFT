@@ -1104,10 +1104,50 @@ async function exportData() {
  * Implemented in Step 11.
  */
 async function importData(file) {
-  // TODO (Step 11): parse JSON, showConfirm(), on confirm: clear all stores,
-  // restore records (Base64 → Blob for images), refresh gallery
-  console.log('importData: stub', file.name);
-  showToast('Import coming in Step 11');
+  const text = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    showToast('Invalid export file');
+    return;
+  }
+
+  if (data.version !== 1) {
+    showToast('Invalid export file');
+    return;
+  }
+
+  showConfirm('This will erase all existing data. Continue?', async () => {
+    await Promise.all([
+      clearStore('machines'),
+      clearStore('workouts'),
+      clearStore('circuits'),
+    ]);
+
+    const restoredMachines = await Promise.all(data.machines.map(async (machine) => {
+      if (!machine.imageBlob || typeof machine.imageBlob !== 'string') {
+        return { ...machine, imageBlob: null };
+      }
+      const blob = await fetch(machine.imageBlob).then(r => r.blob());
+      return { ...machine, imageBlob: blob };
+    }));
+
+    await Promise.all([
+      ...restoredMachines.map(m => putRecord('machines', m)),
+      ...data.workouts.map(w => putRecord('workouts', w)),
+      ...data.circuits.map(c => putRecord('circuits', c)),
+    ]);
+
+    await Promise.all([loadGallery(), loadManagement()]);
+    showToast('Import complete');
+  });
 }
 
 // ── UI Helpers ────────────────────────────────────────────────────────────────
