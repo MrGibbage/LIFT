@@ -250,8 +250,8 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
 
 ### Phase 5 — Data Portability
 
-- [ ] **Step 10: Export**
-  - Read all stores, serialize blobs to Base64, package as JSON, trigger download
+- [x] **Step 10: Export**
+  - `exportData()`: `Promise.all` fetches all three stores in parallel; converts each machine's `imageBlob` to a Base64 data URL via `FileReader.readAsDataURL` (all machines in parallel); packages as `{ version: 1, machines, workouts, circuits }`; triggers download as `lift-export-YYYY-MM-DD.json` via temporary `<a>` + `URL.createObjectURL`; revokes URL; shows "Export complete" toast
 
 - [ ] **Step 11: Import**
   - File input, parse JSON, confirmation dialog, clear stores, restore data (Base64 → Blob)

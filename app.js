@@ -1069,11 +1069,33 @@ async function deleteCircuit(circuitId) {
  * Implemented in Step 10.
  */
 async function exportData() {
-  // TODO (Step 10): read all stores, convert imageBlob to Base64,
-  // package as { version: 1, machines, workouts, circuits },
-  // trigger download as lift-export-YYYY-MM-DD.json
-  console.log('exportData: stub');
-  showToast('Export coming in Step 10');
+  const [machines, workouts, circuits] = await Promise.all([
+    getAllFromStore('machines'),
+    getAllFromStore('workouts'),
+    getAllFromStore('circuits'),
+  ]);
+
+  const serializedMachines = await Promise.all(machines.map(async (machine) => {
+    if (!machine.imageBlob) return { ...machine, imageBlob: null };
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(machine.imageBlob);
+    });
+    return { ...machine, imageBlob: dataUrl };
+  }));
+
+  const payload = JSON.stringify({ version: 1, machines: serializedMachines, workouts, circuits });
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lift-export-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast('Export complete');
 }
 
 /**
