@@ -2,19 +2,19 @@
 // Strategy: cache-first for all app shell assets.
 // The cache name includes a version string — bump it to force clients to update.
 
-const CACHE_NAME = 'lift-v2';
+const CACHE_NAME = 'lift-v3';
 
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
-  '/icons/default-machine.svg',
+  '/LIFT/',
+  '/LIFT/index.html',
+  '/LIFT/style.css',
+  '/LIFT/app.js',
+  '/LIFT/manifest.json',
+  '/LIFT/icons/icon-192.png',
+  '/LIFT/icons/icon-512.png',
+  '/LIFT/icons/icon-192.svg',
+  '/LIFT/icons/icon-512.svg',
+  '/LIFT/icons/default-machine.svg',
 ];
 
 // ── Install: pre-cache the app shell ─────────────────────────────────────────

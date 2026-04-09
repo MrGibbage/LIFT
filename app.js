@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/LIFT/sw.js').catch((err) => {
       console.warn('Service worker registration failed:', err);
     });
   }
