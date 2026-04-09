@@ -1,4 +1,5 @@
 # LIFT — Logging Individual Fitness Targets
+
 ## Mobile-First Workout Tracker PWA
 
 ---
@@ -18,7 +19,7 @@ This file is the single source of truth for the LIFT project. You **must** keep 
 
 ## Project Goal
 
-A fully offline, installable PWA for personal gym use. Tracks weight settings on ~12 weight machines. No backend — all data lives in IndexedDB on the device. Hosted on the user's homelab (HTTPS required for PWA install). Optimized for Android Chrome.
+A fully offline, installable PWA for personal gym use. Tracks weight settings on ~12 weight machines. No backend — all data lives in IndexedDB on the device. Hosted on GitHub (HTTPS required for PWA install). Optimized for Android Chrome.
 
 **Tech stack:** HTML5, CSS3, Vanilla JS (ES6+, no frameworks), IndexedDB, PWA (manifest + service worker).
 
@@ -27,6 +28,7 @@ A fully offline, installable PWA for personal gym use. Tracks weight settings on
 ## Data Model (IndexedDB database: `liftDB`)
 
 ### Object Store: `machines`
+
 - `id` — string, keyPath (e.g. `'leg-press-01'`, generated as slugified name + timestamp)
 - `name` — string
 - `weightLbs` — number
@@ -36,6 +38,7 @@ A fully offline, installable PWA for personal gym use. Tracks weight settings on
 - Index on `name`
 
 ### Object Store: `workouts`
+
 - Key: auto-increment integer
 - `machineId` — string (FK → machines.id)
 - `weightLbs` — number
@@ -43,6 +46,7 @@ A fully offline, installable PWA for personal gym use. Tracks weight settings on
 - Index on `machineId`
 
 ### Object Store: `circuits`
+
 - `id` — string, keyPath (slugified name + timestamp)
 - `name` — string
 - `machineIds` — array of machine id strings, in circuit order
@@ -54,17 +58,20 @@ A fully offline, installable PWA for personal gym use. Tracks weight settings on
 Navigation is handled by showing/hiding `<div>` sections (no routing library). A `.hidden` CSS class toggles visibility. State (current machine, current circuit, circuit position) is held in JS module-level variables.
 
 ### 1. Main Menu / Dashboard (`#main-menu`)
+
 - Gallery grid of all machines (image + name on each card)
 - Tapping a machine card → Machine Detail screen (no circuit context)
 - **"Start Circuit" button** → Circuit Selection modal/screen
 - **"Manage" button** → Management screen
 
 ### 2. Circuit Selection (`#circuit-select` or modal overlay)
+
 - Lists all saved circuits by name
 - Tapping a circuit → immediately navigates to the first machine in that circuit (sets circuit context in state)
 - "Cancel" returns to Main Menu
 
 ### 3. Machine Detail / Logging (`#detail-screen`)
+
 - Large machine image (or default icon if none), machine name, current weight (lbs), last used date
 - **"Adjust Weight" button** → Weight Adjustment screen
 - **"Back" button** → Main Menu (clears circuit context)
@@ -78,12 +85,14 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
 - Logging a workout: writes a new record to `workouts` store with `machineId`, `weightLbs` (current weight), `date` (today ISO)
 
 ### 4. Weight Adjustment (`#adjust-weight-screen`)
+
 - Shows machine name and current weightLbs
 - Single `<input type="number">` — user types the new weight directly (no +/- buttons)
 - **"Save"** — updates `machines.weightLbs` in DB, navigates back to Machine Detail
 - **"Cancel"** — navigates back to Machine Detail, no change
 
 ### 5. Management (`#management-screen`)
+
 - **"Back"** button → Main Menu
 - **Add Machine** section: name text field + file input for image + "Add" button
 - **Machine List**: shows all machines with:
@@ -96,6 +105,7 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
 - **Import Data** button (with confirmation: "This will erase all existing data. Continue?")
 
 ### 5a. Reorder Mode (within Management screen)
+
 - Triggered by "Reorder Machines" button
 - Shows machine list with drag-and-drop handles
 - A clear visual mode indicator (e.g. banner: "Reorder Mode — drag to rearrange")
@@ -104,6 +114,7 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
 - No other management actions available while in reorder mode (prevents accidental taps)
 
 ### 6. Circuit Editor (`#circuit-editor` or modal)
+
 - Name input field
 - Machine list (all machines) with checkboxes or add buttons to build the circuit
 - Drag-and-drop to set circuit order (within the selected machines list)
@@ -124,12 +135,14 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
 ## Import / Export
 
 ### Export
+
 - Reads all records from `machines`, `workouts`, and `circuits`
 - Converts `imageBlob` fields to Base64 strings
 - Packages as single JSON object: `{ version: 1, machines: [...], workouts: [...], circuits: [...] }`
 - Triggers browser download as `lift-export-{YYYY-MM-DD}.json`
 
 ### Import
+
 - File input accepts `.json`
 - On selection: parse JSON, show confirmation dialog ("This will erase all existing data. Continue?")
 - On confirm: clear all three object stores, convert Base64 strings back to Blobs, write all records to DB, refresh UI
@@ -170,7 +183,7 @@ Navigation is handled by showing/hiding `<div>` sections (no routing library). A
 
 ## Deployment
 
-- Hosted on user's homelab (specific server TBD — likely Synology or a homelab web server)
+- Hosted on GitHub
 - Must be served over HTTPS for PWA install to work on Android
 - No build step — plain static files
 
@@ -253,15 +266,17 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
 - [x] **Step 10: Export**
   - `exportData()`: `Promise.all` fetches all three stores in parallel; converts each machine's `imageBlob` to a Base64 data URL via `FileReader.readAsDataURL` (all machines in parallel); packages as `{ version: 1, machines, workouts, circuits }`; triggers download as `lift-export-YYYY-MM-DD.json` via temporary `<a>` + `URL.createObjectURL`; revokes URL; shows "Export complete" toast
 
-- [ ] **Step 11: Import**
+- [x] **Step 11: Import**
   - File input, parse JSON, confirmation dialog, clear stores, restore data (Base64 → Blob)
 
 ### Phase 6 — Polish & Deployment
 
-- [ ] **Step 12: PWA finalization**
-  - Finalize `manifest.json` (icons, colors, name)
-  - Finalize `sw.js` (cache all app shell assets, handle install/activate/fetch)
-  - Test PWA install prompt on Android Chrome
+- [x] **Step 12: PWA finalization**
+  - Generated `icon-192.png` and `icon-512.png` via Pillow (matching SVG design: dark bg, teal accent bar, "L" lettermark, dumbbell)
+  - Updated `manifest.json`: replaced SVG-only icons with PNG entries; split `"any maskable"` into separate `"any"` and `"maskable"` entries per best practice
+  - Updated `sw.js`: bumped cache to `lift-v2`, added PNG icons to pre-cache list
+  - Updated `index.html`: `apple-touch-icon` now points to PNG
+  - All required tags confirmed present: `<link rel="manifest">`, `<meta name="theme-color">`, `apple-mobile-web-app-capable`
 
 - [ ] **Step 13: Polish**
   - Toast/snackbar component wired to all relevant actions
@@ -270,8 +285,7 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - Test full circuit flow end-to-end
   - Test import/export round-trip
 
-- [ ] **Step 14: Homelab deployment**
-  - Determine hosting location (Synology, nginx container, etc.)
+- [ ] **Step 14: GitHub deployment**
   - Deploy static files
   - Confirm HTTPS
   - Install PWA on Android phone
@@ -281,17 +295,18 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
 
 ## Decisions Log
 
-| Date | Decision |
-|------|----------|
-| 2026-04-08 | Weight unit: pounds only |
-| 2026-04-08 | No sets/reps — weight-only logging |
-| 2026-04-08 | No workout history view — current weight + last used date is sufficient |
-| 2026-04-08 | Machine sort order is manual; managed via drag-and-drop reorder mode on Management screen |
+| Date       | Decision                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-04-08 | Weight unit: pounds only                                                                                |
+| 2026-04-08 | No sets/reps — weight-only logging                                                                      |
+| 2026-04-08 | No workout history view — current weight + last used date is sufficient                                 |
+| 2026-04-08 | Machine sort order is manual; managed via drag-and-drop reorder mode on Management screen               |
 | 2026-04-08 | Weight adjustment is a free-form number input, not +/- steppers (each machine has different increments) |
-| 2026-04-08 | Circuit feature added: named circuits with ordered machine lists; managed on Management screen |
-| 2026-04-08 | Complete buttons are context-aware: solo vs. circuit (mid) vs. circuit (last machine) |
-| 2026-04-08 | PWA: full install with manifest + service worker; hosted on homelab over HTTPS |
-| 2026-04-08 | Target device: Android Chrome (personal use only) |
-| 2026-04-08 | Default machine image: generic gym icon (SVG) in /icons/ |
-| 2026-04-08 | Confirmations required for: machine delete, circuit delete, import |
-| 2026-04-08 | No color scheme preference — LLM to choose modern dark theme with clean accent color |
+| 2026-04-08 | Circuit feature added: named circuits with ordered machine lists; managed on Management screen          |
+| 2026-04-08 | Complete buttons are context-aware: solo vs. circuit (mid) vs. circuit (last machine)                   |
+| 2026-04-08 | PWA: full install with manifest + service worker; hosted on homelab over HTTPS                          |
+| 2026-04-08 | Target device: Android Chrome (personal use only)                                                       |
+| 2026-04-08 | Default machine image: generic gym icon (SVG) in /icons/                                                |
+| 2026-04-08 | Confirmations required for: machine delete, circuit delete, import                                      |
+| 2026-04-08 | No color scheme preference — LLM to choose modern dark theme with clean accent color                    |
+| 2026-04-09 | After consideration, the PWA app will be hosted on GitHub                                               |

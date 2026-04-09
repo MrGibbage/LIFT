@@ -2,7 +2,7 @@
 // Strategy: cache-first for all app shell assets.
 // The cache name includes a version string — bump it to force clients to update.
 
-const CACHE_NAME = 'lift-v1';
+const CACHE_NAME = 'lift-v2';
 
 const APP_SHELL = [
   '/',
@@ -10,6 +10,8 @@ const APP_SHELL = [
   '/style.css',
   '/app.js',
   '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg',
   '/icons/default-machine.svg',
