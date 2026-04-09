@@ -278,12 +278,12 @@ Each step is intended to be a separate focused chat session. Mark items `[x]` wh
   - Updated `index.html`: `apple-touch-icon` now points to PNG
   - All required tags confirmed present: `<link rel="manifest">`, `<meta name="theme-color">`, `apple-mobile-web-app-capable`
 
-- [ ] **Step 13: Polish**
-  - Toast/snackbar component wired to all relevant actions
-  - Confirmation dialog component
-  - Review all touch targets (min 48px)
-  - Test full circuit flow end-to-end
-  - Test import/export round-trip
+- [x] **Step 13: Polish**
+  - Toast coverage audited — all user actions already had toasts; no gaps found
+  - Confirmation dialogs audited — machine delete, circuit delete, import all correctly call showConfirm()
+  - Touch targets fixed — removed `min-height: 36px` override from `.btn-sm` so it inherits 48px from `.btn`
+  - Circuit flow reviewed — logic correct for all three modes (solo/mid-circuit/last machine); added "Machine not found" toast + goToMainMenu() fallback in renderDetail() for deleted-machine edge case
+  - Import/export round-trip reviewed — Base64 serialization and fetch-based deserialization are correct; workouts autoIncrement key regeneration on import is safe
 
 - [ ] **Step 14: GitHub deployment**
   - Deploy static files

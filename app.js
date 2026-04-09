@@ -358,7 +358,11 @@ function renderGallery(machines) {
  */
 async function renderDetail() {
   const machine = await getRecord('machines', currentMachineId);
-  if (!machine) return;
+  if (!machine) {
+    showToast('Machine not found');
+    goToMainMenu();
+    return;
+  }
 
   document.getElementById('detail-machine-name').textContent = machine.name;
 
