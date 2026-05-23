@@ -156,6 +156,15 @@ function initNavigation() {
     document.getElementById('new-machine-image-name').textContent = name;
   });
 
+  // Change photo on detail screen
+  document.getElementById('btn-change-photo').addEventListener('click', () => {
+    document.getElementById('change-photo-input').click();
+  });
+  document.getElementById('change-photo-input').addEventListener('change', (e) => {
+    if (e.target.files[0]) handlePhotoChange(e.target.files[0]);
+    e.target.value = '';
+  });
+
   // Circuit editor
   document.getElementById('btn-circuit-editor-back').addEventListener('click', () => {
     goToManagement();
@@ -377,7 +386,119 @@ async function renderDetail() {
   document.getElementById('detail-weight').textContent = machine.weightLbs;
   document.getElementById('detail-last-used').textContent = machine.lastUsed || '—';
 
+  renderDetailSettings(machine);
   await updateCompleteButton();
+}
+
+/**
+ * Render the settings section into #detail-settings for the given machine.
+ * @param {object} machine
+ */
+function renderDetailSettings(machine) {
+  const settings = machine.settings ?? [];
+  const container = document.getElementById('detail-settings');
+  container.innerHTML = '';
+
+  const section = document.createElement('div');
+  section.className = 'settings-section';
+
+  const title = document.createElement('div');
+  title.className = 'settings-title';
+  title.textContent = 'Settings';
+  section.appendChild(title);
+
+  settings.forEach((setting, index) => {
+    section.appendChild(buildSettingRow(setting, index));
+  });
+
+  if (settings.length < 3) {
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-add-setting';
+    addBtn.textContent = '+ Add Setting';
+    addBtn.addEventListener('click', handleAddSetting);
+    section.appendChild(addBtn);
+  }
+
+  container.appendChild(section);
+}
+
+/**
+ * Build a single setting row (label input + value input + remove button).
+ * @param {{ label: string, value: string }} setting
+ * @param {number} index
+ * @returns {HTMLElement}
+ */
+function buildSettingRow(setting, index) {
+  const row = document.createElement('div');
+  row.className = 'setting-row';
+
+  const labelInput = document.createElement('input');
+  labelInput.type = 'text';
+  labelInput.className = 'setting-label-input';
+  labelInput.value = setting.label;
+  labelInput.placeholder = 'Name';
+  labelInput.addEventListener('blur', () => saveSettingField(index, 'label', labelInput.value));
+  labelInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') labelInput.blur(); });
+
+  const valueInput = document.createElement('input');
+  valueInput.type = 'text';
+  valueInput.className = 'setting-value-input';
+  valueInput.value = setting.value;
+  valueInput.placeholder = '—';
+  valueInput.addEventListener('blur', () => saveSettingField(index, 'value', valueInput.value));
+  valueInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') valueInput.blur(); });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn-remove-setting';
+  removeBtn.textContent = '×';
+  removeBtn.setAttribute('aria-label', 'Remove setting');
+  removeBtn.addEventListener('click', () => handleRemoveSetting(index));
+
+  row.appendChild(labelInput);
+  row.appendChild(valueInput);
+  row.appendChild(removeBtn);
+  return row;
+}
+
+/** Save one field of one setting to the DB without re-rendering. */
+async function saveSettingField(index, field, value) {
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+  const settings = machine.settings ?? [];
+  if (index >= settings.length) return;
+  settings[index] = { ...settings[index], [field]: value.trim() };
+  await putRecord('machines', { ...machine, settings });
+}
+
+/** Add a new setting slot (default label "Seat") and re-render the detail screen. */
+async function handleAddSetting() {
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+  const settings = machine.settings ?? [];
+  if (settings.length >= 3) return;
+  settings.push({ label: 'Seat', value: '' });
+  await putRecord('machines', { ...machine, settings });
+  renderDetail();
+}
+
+/** Remove the setting at the given index and re-render the detail screen. */
+async function handleRemoveSetting(index) {
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+  const settings = machine.settings ?? [];
+  settings.splice(index, 1);
+  await putRecord('machines', { ...machine, settings });
+  renderDetail();
+}
+
+/** Replace the machine's photo with a new file and update both the detail and gallery. */
+async function handlePhotoChange(file) {
+  const machine = await getRecord('machines', currentMachineId);
+  if (!machine) return;
+  await putRecord('machines', { ...machine, imageBlob: file });
+  showToast('Photo updated');
+  renderDetail();
+  loadGallery();
 }
 
 /**

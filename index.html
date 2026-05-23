@@ -58,6 +58,8 @@
     <main class="detail-content">
       <div class="machine-image-container">
         <img id="detail-machine-image" src="icons/default-machine.svg" alt="Machine" />
+        <button id="btn-change-photo" class="photo-change-btn" aria-label="Change photo">📷</button>
+        <input type="file" id="change-photo-input" accept="image/*" class="hidden-file-input" />
       </div>
       <div class="detail-info">
         <div class="weight-display">
@@ -72,6 +74,7 @@
           <span id="detail-last-used" class="last-used-value">—</span>
         </div>
       </div>
+      <div id="detail-settings"></div>
       <div class="detail-actions">
         <button id="btn-adjust-weight" class="btn btn-secondary">Adjust Weight</button>
         <button id="btn-complete" class="btn btn-primary">Complete &amp; Return to Gallery</button>
