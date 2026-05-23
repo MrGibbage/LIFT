@@ -5,7 +5,8 @@ A mobile-first, fully offline PWA for tracking weight settings on gym machines.
 ## Features
 
 - Track weight settings across multiple weight machines
-- Photo of each machine for quick identification
+- Photo of each machine for quick identification; tap the camera badge on the detail screen to change it
+- Per-machine settings (e.g. seat position, back position) — up to 3 named slots with short text values, visible on the detail screen
 - Circuit mode — chain machines into a named workout and step through them in order
 - All data stored locally on-device (IndexedDB) — no account, no backend, no internet required
 - Installable on Android Chrome via PWA
